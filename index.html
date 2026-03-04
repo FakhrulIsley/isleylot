@@ -4,189 +4,160 @@
         <meta charset="utf-8">
         <meta http-equiv="X-UA-Compatible" content="IE=edge">
         <meta name="viewport" content="initial-scale=1,user-scalable=no,maximum-scale=1,width=device-width">
-        <meta name="mobile-web-app-capable" content="yes">
-        <meta name="apple-mobile-web-app-capable" content="yes">
         <link rel="stylesheet" href="css/leaflet.css">
         <link rel="stylesheet" href="css/L.Control.Layers.Tree.css">
         <link rel="stylesheet" href="css/qgis2web.css">
         <link rel="stylesheet" href="css/fontawesome-all.min.css">
         <link rel="stylesheet" href="css/leaflet-search.css">
-        <link rel="stylesheet" href="css/leaflet.photon.css">
         
         <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
         <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 
         <style>
-            html, body {
-                width: 100%;
-                height: 100%;
-                padding: 0;
-                margin: 0;
-                font-family: Arial, sans-serif;
-            }
+            html, body { width: 100%; height: 100%; padding: 0; margin: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+            
             /* Header Style */
             #header {
-                height: 70px;
-                background: #2c3e50;
+                height: 80px;
+                background: linear-gradient(90deg, #1a2a6c, #b21f1f, #fdbb2d);
                 color: white;
                 display: flex;
                 align-items: center;
-                padding: 0 20px;
-                box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+                padding: 0 25px;
+                box-shadow: 0 4px 10px rgba(0,0,0,0.3);
                 z-index: 1000;
                 position: relative;
             }
-            #header img {
-                height: 50px;
-                margin-right: 15px;
-            }
-            #header h1 {
-                margin: 0;
-                font-size: 24px;
-                text-transform: uppercase;
-                letter-spacing: 1px;
-            }
-            /* Map adjustment */
-            #map {
-                width: 100%;
-                height: calc(100% - 70px); /* Tolak ketinggian header */
-                padding: 0;
-                margin: 0;
-            }
-            /* Opacity Control Style */
+            #header img { height: 60px; margin-right: 20px; background: white; padding: 5px; border-radius: 5px; }
+            #header h1 { margin: 0; font-size: 22px; font-weight: bold; text-shadow: 2px 2px 4px rgba(0,0,0,0.5); }
+
+            #map { width: 100%; height: calc(100% - 80px); }
+
+            /* Panel Opacity */
             .opacity-control {
-                background: white;
-                padding: 10px;
-                border-radius: 5px;
-                box-shadow: 0 1px 5px rgba(0,0,0,0.4);
+                background: rgba(255, 255, 255, 0.9);
+                padding: 12px;
+                border-radius: 8px;
+                border: 1px solid #ccc;
+                box-shadow: 0 2px 10px rgba(0,0,0,0.2);
             }
-            /* PDF Button inside Popup */
+
+            /* Style Popup & Butang PDF */
+            .leaflet-popup-content-wrapper { border-radius: 8px; padding: 5px; }
+            .table-popup { width: 100%; border-collapse: collapse; margin-top: 10px; }
+            .table-popup th { text-align: left; padding: 5px; background: #f2f2f2; font-size: 12px; }
+            .table-popup td { padding: 5px; border-bottom: 1px solid #eee; font-size: 12px; }
+            
             .btn-pdf {
-                background: #e74c3c;
+                background: #27ae60;
                 color: white;
                 border: none;
-                padding: 5px 10px;
-                border-radius: 3px;
-                cursor: pointer;
-                margin-top: 10px;
+                padding: 8px;
                 width: 100%;
+                border-radius: 4px;
+                cursor: pointer;
+                font-weight: bold;
+                margin-top: 10px;
+                transition: 0.3s;
             }
+            .btn-pdf:hover { background: #219150; }
         </style>
-        <title>Cempaka Digital Resident</title>
     </head>
     <body>
+
         <div id="header">
-            <img src="logo_puo.png" alt="Logo PUO"> <h1>Cempaka Digital Resident</h1>
+            <img src="logo_puo.png" alt="PUO"> 
+            <h1>CEMPAKA DIGITAL RESIDENT <br><span style="font-size: 12px; font-weight: normal;">Sistem Maklumat Pemilik Tanah Digital</span></h1>
         </div>
 
         <div id="map"></div>
 
-        <script src="js/qgis2web_expressions.js"></script>
         <script src="js/leaflet.js"></script>
-        <script src="js/L.Control.Layers.Tree.min.js"></script>
-        <script src="js/leaflet.rotatedMarker.js"></script>
-        <script src="js/leaflet.pattern.js"></script>
-        <script src="js/leaflet-hash.js"></script>
-        <script src="js/Autolinker.min.js"></script>
-        <script src="js/rbush.min.js"></script>
-        <script src="js/labelgun.min.js"></script>
-        <script src="js/labels.js"></script>
-        <script src="js/leaflet.photon.js"></script>
         <script src="js/leaflet-search.js"></script>
         <script src="data/LOTFINAL_0.js"></script>
 
         <script>
-        var map = L.map('map', {
-            zoomControl:true, maxZoom:28, minZoom:1
-        }).fitBounds([[2.103046624197545,102.52099101288623],[2.1044002630599286,102.5233633458413]]);
+        var map = L.map('map', { zoomControl:true, maxZoom:28 }).fitBounds([[2.10304,102.5209],[2.10440,102.5233]]);
 
-        // --- 1. BASEMAPS (Street & Satellite) ---
-        var osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            attribution: 'OpenStreetMap'
-        }).addTo(map);
+        // 1. BASEMAPS
+        var street = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+        var satellite = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}');
 
-        var satellite = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
-            attribution: 'Esri Satellite'
-        });
-
-        var baseMaps = {
-            "Street View": osm,
-            "Satellite View": satellite
-        };
-
-        // --- 2. PDF GENERATOR FUNCTION ---
-        async function generatePDF(lotNo) {
+        // 2. FUNGSI JANA PDF
+        async function generatePDF(lotNo, pemilik, area) {
             const { jsPDF } = window.jspdf;
             const doc = new jsPDF();
             
-            doc.setFontSize(18);
-            doc.text("Laporan Lot: " + lotNo, 20, 20);
-            doc.setFontSize(12);
-            doc.text("Projek: Cempaka Digital Resident", 20, 30);
-            doc.text("Tarikh Jana: " + new Date().toLocaleDateString(), 20, 40);
+            doc.setFillColor(26, 42, 108);
+            doc.rect(0, 0, 210, 40, 'F');
+            doc.setTextColor(255, 255, 255);
+            doc.setFontSize(22);
+            doc.text("LAPORAN LOT TANAH", 105, 25, { align: 'center' });
             
-            // Mengambil screenshot map (Simplified)
+            doc.setTextColor(0, 0, 0);
+            doc.setFontSize(12);
+            doc.text(`No. Lot: ${lotNo}`, 20, 50);
+            doc.text(`Pemilik: ${pemilik}`, 20, 60);
+            doc.text(`Luas Area: ${area}`, 20, 70);
+            doc.text(`Tarikh Jana: ${new Date().toLocaleString()}`, 20, 80);
+            
             html2canvas(document.getElementById("map")).then(canvas => {
                 const imgData = canvas.toDataURL('image/png');
-                doc.addImage(imgData, 'PNG', 15, 50, 180, 100);
-                doc.save("Lot_" + lotNo + ".pdf");
+                doc.addImage(imgData, 'PNG', 15, 90, 180, 100);
+                doc.save(`Laporan_Lot_${lotNo}.pdf`);
             });
         }
 
-        // --- 3. LAYER LOT ---
-        function style_LOTFINAL_0_0(feature) {
-            return {
-                pane: 'pane_LOTFINAL_0',
-                opacity: 1,
-                color: 'rgba(35,35,35,1.0)',
-                weight: 1.0, 
-                fill: true,
-                fillOpacity: 0.7,
-                fillColor: 'rgba(232,113,141,1.0)',
-                interactive: true,
-            }
-        }
-
-        map.createPane('pane_LOTFINAL_0');
-        map.getPane('pane_LOTFINAL_0').style.zIndex = 400;
-
+        // 3. LAYER DATA LOT
         var layer_LOTFINAL_0 = new L.geoJson(json_LOTFINAL_0, {
-            attribution: '',
-            interactive: true,
-            style: style_LOTFINAL_0_0,
+            style: {
+                color: '#232323',
+                weight: 1,
+                fillColor: '#e8718d',
+                fillOpacity: 0.7
+            },
             onEachFeature: function(feature, layer) {
-                var popupContent = '<div id="popup-report"><table>\
-                        <tr><th scope="row">NO LOT</th><td>' + (feature.properties['NO_LOT'] || 'N/A') + '</td></tr>\
-                        <tr><th scope="row">AREA</th><td>' + (feature.properties['AREA'] || 'N/A') + '</td></tr>\
-                    </table>\
-                    <button class="btn-pdf" onclick="generatePDF(\'' + feature.properties['NO_LOT'] + '\')">Muat Turun PDF</button></div>';
-                layer.bindPopup(popupContent, {maxHeight: 400});
+                // Sila pastikan property 'PEMILIK' ada dalam data anda
+                var owner = feature.properties['PEMILIK'] || "Tiada Maklumat";
+                var lot = feature.properties['NO_LOT'] || "N/A";
+                var area = feature.properties['AREA'] || "N/A";
+
+                var content = `
+                    <table class="table-popup">
+                        <tr><th>NO LOT</th><td><b>${lot}</b></td></tr>
+                        <tr><th>PEMILIK</th><td><b>${owner}</b></td></tr>
+                        <tr><th>LUAS</th><td>${area}</td></tr>
+                    </table>
+                    <button class="btn-pdf" onclick="generatePDF('${lot}', '${owner}', '${area}')">
+                        <i class="fa fa-file-pdf"></i> Jana PDF
+                    </button>
+                `;
+                layer.bindPopup(content);
             }
         }).addTo(map);
 
-        // --- 4. OPACITY CONTROL ---
+        // 4. MENU TUKAR BASEMAP & LAYER
+        var baseMaps = { "Street Map": street, "Satellite": satellite };
+        var overlayMaps = { "Data Lot Tanah": layer_LOTFINAL_0 };
+        L.control.layers(baseMaps, overlayMaps, {collapsed: false}).addTo(map);
+
+        // 5. OPACITY CONTROL
         var opacityControl = L.control({position: 'bottomleft'});
-        opacityControl.onAdd = function (map) {
+        opacityControl.onAdd = function () {
             var div = L.DomUtil.create('div', 'opacity-control');
-            div.innerHTML = '<b>Lot Opacity</b><br><input id="sldOpacity" type="range" min="0" max="1" step="0.1" value="0.7">';
+            div.innerHTML = '<b>Transparensi Lot</b><br><input id="rangeOpacity" type="range" min="0" max="1" step="0.1" value="0.7" style="width:100px">';
             return div;
         };
         opacityControl.addTo(map);
-
-        document.getElementById('sldOpacity').oninput = function(e) {
-            var val = e.target.value;
-            layer_LOTFINAL_0.setStyle({fillOpacity: val});
+        document.getElementById('rangeOpacity').oninput = function(e) {
+            layer_LOTFINAL_0.setStyle({fillOpacity: e.target.value});
         };
 
-        // --- 5. LAYER CONTROL (Menu) ---
-        L.control.layers(baseMaps, {"Lot Final": layer_LOTFINAL_0}, {collapsed:false}).addTo(map);
-
-        // --- 6. LAND EXPLORER (Search) ---
+        // 6. LAND EXPLORER (SEARCH)
         var searchControl = new L.Control.Search({
             layer: layer_LOTFINAL_0,
-            propertyName: 'NO_LOT',
-            marker: false,
-            moveToLocation: function(latlng, title, map) {
+            propertyName: 'NO_LOT', // Boleh tukar ke 'PEMILIK' jika mahu cari nama orang
+            moveToLocation: function(latlng) {
                 map.setView(latlng, 19);
             }
         });
